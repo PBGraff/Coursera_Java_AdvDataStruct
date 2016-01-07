@@ -8,11 +8,13 @@
 package roadgraph;
 
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -138,7 +140,8 @@ public class MapGraph {
 	public List<GeographicPoint> bfs(GeographicPoint start, 
 			 					     GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		if (start == null || goal == null || !vertices.containsKey(start) ||
+		if (start == null || goal == null || 
+				!vertices.containsKey(start) ||
 				!vertices.containsKey(goal)) {
 			return null;
 		}
@@ -151,7 +154,6 @@ public class MapGraph {
 		} else {
 			return null;
 		}
-		
 	}
 	
 	/** Search loop for breadth first search
@@ -193,24 +195,6 @@ public class MapGraph {
 		return false;
 	}
 	
-	/** Find the path from start to goal using breadth first search
-	 * 
-	 * @param start The starting location
-	 * @param goal The goal location
-	 * @param parentMap The mapping between nodes and the node that led to them - now filled in
-	 * @return The list of intersections that form the shortest (unweighted)
-	 *   path from start to goal (including both start and goal).
-	 */
-	private List<GeographicPoint> constructPath(GeographicPoint start, GeographicPoint goal,
-			Map<GeographicPoint, GeographicPoint> parentMap) {
-		List<GeographicPoint> path = new LinkedList<GeographicPoint>();
-		path.add(goal);
-		while (!path.get(0).equals(start)) {
-			path.add(0, parentMap.get(path.get(0)));
-		}
-		return path;
-	}
-
 	/** Find the path from start to goal using Dijkstra's algorithm
 	 * 
 	 * @param start The starting location
@@ -236,12 +220,76 @@ public class MapGraph {
 	public List<GeographicPoint> dijkstra(GeographicPoint start, 
 										  GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 3
-
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
+		if (start == null || goal == null || 
+				!vertices.containsKey(start) ||
+				!vertices.containsKey(goal)) {
+			return null;
+		}
 		
-		return null;
+		// initialize all distances to infinity
+		for (MapNode mn : vertices.values()) {
+			mn.setDistanceFromStart(Double.POSITIVE_INFINITY);
+		}
+
+		Map<GeographicPoint, GeographicPoint> parentMap = new HashMap<GeographicPoint, GeographicPoint>();
+		boolean found = DijkstraSearch(start, goal, parentMap, nodeSearched);
+
+		if (found) {
+			return constructPath(start, goal, parentMap);
+		} else {
+			return null;
+		}
+	}
+
+	private boolean DijkstraSearch(GeographicPoint start, GeographicPoint goal,
+			Map<GeographicPoint, GeographicPoint> parentMap, Consumer<GeographicPoint> nodeSearched) {
+		PriorityQueue<MapNode> queue = new PriorityQueue<MapNode>(new DijkstraComparator());
+		Set<GeographicPoint> visited = new HashSet<GeographicPoint>();
+		
+		vertices.get(start).setDistanceFromStart(0);
+		queue.add(vertices.get(start));
+		visited.add(start);
+		
+		while (!queue.isEmpty()) {
+			// get next node, closest in terms of distance from start
+			// add to visited and nodeSearched
+			MapNode cur = queue.remove();
+			visited.add(cur.getLocation());
+			nodeSearched.accept(cur.getLocation());
+			
+			// exit if this is the goal
+			if (cur.getLocation().equals(goal)) return true;
+			
+			// loop over all neighbors
+			for (MapEdge e : cur.getNeighbors()) {
+				// if unvisited and this is a shorter path to the node, then add to queue
+				if (!visited.contains(e.getEnd().getLocation()) &&
+						cur.getDistanceFromStart() + e.getLength() < e.getEnd().getDistanceFromStart()) {
+					// set new distance
+					e.getEnd().setDistanceFromStart(cur.getDistanceFromStart() + e.getLength());
+					// set parent
+					parentMap.put(e.getEnd().getLocation(), cur.getLocation());
+					// add to queue
+					queue.add(e.getEnd());
+				}
+			}
+		}
+		
+		// goal not found
+		return false;
+	}
+
+	private class DijkstraComparator implements Comparator<MapNode> {
+		@Override
+		public int compare(MapNode o1, MapNode o2) {
+			if (o1.getDistanceFromStart() < o2.getDistanceFromStart()) {
+				return -1;
+			} else if (o1.getDistanceFromStart() > o2.getDistanceFromStart()) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
 	}
 
 	/** Find the path from start to goal using A-Star search
@@ -268,16 +316,101 @@ public class MapGraph {
 	public List<GeographicPoint> aStarSearch(GeographicPoint start, 
 											 GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 3
+		if (start == null || goal == null || 
+				!vertices.containsKey(start) ||
+				!vertices.containsKey(goal)) {
+			return null;
+		}
 		
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
-		
-		return null;
+		// initialize all distances to infinity
+		for (MapNode mn : vertices.values()) {
+			mn.setDistanceFromStart(Double.POSITIVE_INFINITY);
+			mn.setEstDistFromGoal(Double.POSITIVE_INFINITY);
+		}
+
+		Map<GeographicPoint, GeographicPoint> parentMap = new HashMap<GeographicPoint, GeographicPoint>();
+		boolean found = AStarSearch(start, goal, parentMap, nodeSearched);
+
+		if (found) {
+			return constructPath(start, goal, parentMap);
+		} else {
+			return null;
+		}
 	}
 
-	
-	
+	private boolean AStarSearch(GeographicPoint start, GeographicPoint goal,
+			Map<GeographicPoint, GeographicPoint> parentMap, Consumer<GeographicPoint> nodeSearched) {
+		PriorityQueue<MapNode> queue = new PriorityQueue<MapNode>(new AStarComparator());
+		Set<GeographicPoint> visited = new HashSet<GeographicPoint>();
+		
+		vertices.get(start).setDistanceFromStart(0);
+		vertices.get(start).setEstDistFromGoal(start.distance(goal));
+		queue.add(vertices.get(start));
+		visited.add(start);
+		
+		while (!queue.isEmpty()) {
+			// get next node, closest in terms of distance from start
+			// add to visited and nodeSearched
+			MapNode cur = queue.remove();
+			visited.add(cur.getLocation());
+			nodeSearched.accept(cur.getLocation());
+			
+			// exit if this is the goal
+			if (cur.getLocation().equals(goal)) return true;
+			
+			// loop over all neighbors
+			for (MapEdge e : cur.getNeighbors()) {
+				// calculate estimated distance from neighbor to goal
+				e.getEnd().setEstDistFromGoal(e.getEnd().getLocation().distance(goal));
+				// if unvisited and this is a shorter path, then add to queue
+				if (!visited.contains(e.getEnd().getLocation()) &&
+						cur.getDistanceFromStart() + e.getLength() + e.getEnd().getEstDistFromGoal() 
+						< e.getEnd().getTotalDistance()) {
+					// set new distance from start
+					e.getEnd().setDistanceFromStart(cur.getDistanceFromStart() + e.getLength());
+					// set parent
+					parentMap.put(e.getEnd().getLocation(), cur.getLocation());
+					// add to queue
+					queue.add(e.getEnd());
+				}
+			}
+		}
+		
+		// goal not found
+		return false;
+	}
+
+	private class AStarComparator implements Comparator<MapNode> {
+		@Override
+		public int compare(MapNode o1, MapNode o2) {
+			if (o1.getTotalDistance() < o2.getTotalDistance()) {
+				return -1;
+			} else if (o1.getTotalDistance() > o2.getTotalDistance()) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	}
+
+	/** Find the path from start to goal using breadth first search
+	 * 
+	 * @param start The starting location
+	 * @param goal The goal location
+	 * @param parentMap The mapping between nodes and the node that led to them - now filled in
+	 * @return The list of intersections that form the shortest (unweighted)
+	 *   path from start to goal (including both start and goal).
+	 */
+	private List<GeographicPoint> constructPath(GeographicPoint start, GeographicPoint goal,
+			Map<GeographicPoint, GeographicPoint> parentMap) {
+		List<GeographicPoint> path = new LinkedList<GeographicPoint>();
+		path.add(goal);
+		while (!path.get(0).equals(start)) {
+			path.add(0, parentMap.get(path.get(0)));
+		}
+		return path;
+	}
+
 	public static void main(String[] args)
 	{
 		System.out.println("Making a new map...");
