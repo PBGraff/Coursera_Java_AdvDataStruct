@@ -1,13 +1,11 @@
 package roadgraph;
 
-import geography.GeographicPoint;
-
 public class MapEdge {
-	private GeographicPoint from, to;
+	private MapNode from, to;
 	private String roadName, roadType;
 	private double length;
 	
-	MapEdge(GeographicPoint from, GeographicPoint to, String name, String type, double len) {
+	MapEdge(MapNode from, MapNode to, String name, String type, double len) {
 		this.from = from;
 		this.to= to;
 		this.roadName = name;
@@ -15,11 +13,11 @@ public class MapEdge {
 		this.length = len;
 	}
 	
-	public GeographicPoint getStart() {
+	public MapNode getStart() {
 		return from;
 	}
 	
-	public GeographicPoint getEnd() {
+	public MapNode getEnd() {
 		return to;
 	}
 	

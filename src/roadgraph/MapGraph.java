@@ -27,16 +27,16 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-	private Set<GeographicPoint> vertices;
-	private Map<GeographicPoint, List<MapEdge>> edges;
+	private Set<MapNode> vertices;
+	private Map<GeographicPoint,MapNode> vertMap;
 	
 	/** 
 	 * Create a new empty MapGraph 
 	 */
 	public MapGraph()
 	{
-		this.vertices = new HashSet<GeographicPoint>();
-		this.edges = new HashMap<GeographicPoint, List<MapEdge>>();
+		this.vertices = new HashSet<MapNode>();
+		this.vertMap = new HashMap<GeographicPoint,MapNode>();
 	}
 	
 	/**
@@ -54,7 +54,7 @@ public class MapGraph {
 	 */
 	public Set<GeographicPoint> getVertices()
 	{
-		return vertices;
+		return vertMap.keySet();
 	}
 	
 	/**
@@ -63,11 +63,11 @@ public class MapGraph {
 	 */
 	public int getNumEdges()
 	{
-		int nEdges = 0;
-		for (GeographicPoint p : vertices) {
-			nEdges += edges.get(p).size();
+		int ne = 0;
+		for (MapNode mn : vertices) {
+			ne += mn.getNumNeighbors();
 		}
-		return nEdges;
+		return ne;
 	}
 
 	
@@ -81,11 +81,14 @@ public class MapGraph {
 	 */
 	public boolean addVertex(GeographicPoint location)
 	{
-		boolean newV = vertices.add(location);
-		if (newV) {
-			edges.put(location, new LinkedList<MapEdge>());
+		if (vertMap.keySet().contains(location)) {
+			return false;
+		} else {
+			MapNode newV = new MapNode(location);
+			vertices.add(newV);
+			vertMap.put(location, newV);
+			return true;
 		}
-		return newV;
 	}
 	
 	/**
@@ -103,23 +106,20 @@ public class MapGraph {
 	public void addEdge(GeographicPoint from, GeographicPoint to, String roadName,
 			String roadType, double length) throws IllegalArgumentException {
 
-		if (!vertices.contains(from)) {
-			throw new IllegalArgumentException("From vertex does not exist.");
-		}
-		if (!vertices.contains(to)) {
-			throw new IllegalArgumentException("To vertex does not exist.");
-		}
-		if (roadName == null || roadType == null) {
-			throw new IllegalArgumentException("Road name and type must not be null.");
-		}
-		if (length < 0) {
-			throw new IllegalArgumentException("Road length must be at least 0.");
+		if (from == null || to == null || 
+				roadName == null || roadType == null ||
+				length < 0) {
+			throw new IllegalArgumentException();
 		}
 		
-		MapEdge e = new MapEdge(from, to, roadName, roadType, length);
-		if (!edges.get(from).contains(e)) {
-			edges.get(from).add(e);
+		MapNode fromV = new MapNode(from);
+		MapNode toV = new MapNode(to);
+		
+		if (!vertices.contains(fromV) || !vertices.contains(toV)) {
+			throw new IllegalArgumentException();
 		}
+		
+		fromV.addEdge(toV, roadName, roadType, length);
 	}
 	
 
@@ -166,20 +166,22 @@ public class MapGraph {
 	private boolean bfsSearch(GeographicPoint start, GeographicPoint goal,
 			Map<GeographicPoint, GeographicPoint> parentMap,
 			Consumer<GeographicPoint> nodeSearched) {
-		List<GeographicPoint> queue = new LinkedList<GeographicPoint>();
-		Set<GeographicPoint> visited = new HashSet<GeographicPoint>();
+		List<MapNode> queue = new LinkedList<MapNode>();
+		Set<MapNode> visited = new HashSet<MapNode>();
+		
+		
 		
 		queue.add(start);
 		visited.add(start);
 		
 		while (!queue.isEmpty()) {
 			// remove first in queue
-			GeographicPoint cur = queue.remove(0);
+			MapNode cur = queue.remove(0);
 			// if current is goal, exit
 			if (cur.equals(goal)) return true;
 			
 			// add current's neighbors to queue and visited and parent map
-			for (MapEdge e : edges.get(cur)) {
+			for (MapEdge e : ) {
 				GeographicPoint p = e.getEnd();
 				if (!visited.contains(p)) {
 					queue.add(p);
