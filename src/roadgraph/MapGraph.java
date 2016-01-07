@@ -27,16 +27,14 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-	private Set<MapNode> vertices;
-	private Map<GeographicPoint,MapNode> vertMap;
+	private Map<GeographicPoint,MapNode> vertices;
 	
 	/** 
 	 * Create a new empty MapGraph 
 	 */
 	public MapGraph()
 	{
-		this.vertices = new HashSet<MapNode>();
-		this.vertMap = new HashMap<GeographicPoint,MapNode>();
+		this.vertices = new HashMap<GeographicPoint,MapNode>();
 	}
 	
 	/**
@@ -54,7 +52,7 @@ public class MapGraph {
 	 */
 	public Set<GeographicPoint> getVertices()
 	{
-		return vertMap.keySet();
+		return vertices.keySet();
 	}
 	
 	/**
@@ -64,7 +62,7 @@ public class MapGraph {
 	public int getNumEdges()
 	{
 		int ne = 0;
-		for (MapNode mn : vertices) {
+		for (MapNode mn : vertices.values()) {
 			ne += mn.getNumNeighbors();
 		}
 		return ne;
@@ -81,12 +79,10 @@ public class MapGraph {
 	 */
 	public boolean addVertex(GeographicPoint location)
 	{
-		if (vertMap.keySet().contains(location)) {
+		if (vertices.containsKey(location)) {
 			return false;
 		} else {
-			MapNode newV = new MapNode(location);
-			vertices.add(newV);
-			vertMap.put(location, newV);
+			vertices.put(location, new MapNode(location));
 			return true;
 		}
 	}
@@ -107,19 +103,14 @@ public class MapGraph {
 			String roadType, double length) throws IllegalArgumentException {
 
 		if (from == null || to == null || 
+				!vertices.containsKey(from) ||
+				!vertices.containsKey(to) ||
 				roadName == null || roadType == null ||
 				length < 0) {
 			throw new IllegalArgumentException();
 		}
 		
-		MapNode fromV = new MapNode(from);
-		MapNode toV = new MapNode(to);
-		
-		if (!vertices.contains(fromV) || !vertices.contains(toV)) {
-			throw new IllegalArgumentException();
-		}
-		
-		fromV.addEdge(toV, roadName, roadType, length);
+		vertices.get(from).addEdge(vertices.get(to), roadName, roadType, length);
 	}
 	
 
@@ -147,8 +138,8 @@ public class MapGraph {
 	public List<GeographicPoint> bfs(GeographicPoint start, 
 			 					     GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		if (start == null || goal == null || !vertices.contains(start) ||
-				!vertices.contains(goal)) {
+		if (start == null || goal == null || !vertices.containsKey(start) ||
+				!vertices.containsKey(goal)) {
 			return null;
 		}
 
@@ -166,23 +157,21 @@ public class MapGraph {
 	private boolean bfsSearch(GeographicPoint start, GeographicPoint goal,
 			Map<GeographicPoint, GeographicPoint> parentMap,
 			Consumer<GeographicPoint> nodeSearched) {
-		List<MapNode> queue = new LinkedList<MapNode>();
-		Set<MapNode> visited = new HashSet<MapNode>();
-		
-		
+		List<GeographicPoint> queue = new LinkedList<GeographicPoint>();
+		Set<GeographicPoint> visited = new HashSet<GeographicPoint>();
 		
 		queue.add(start);
 		visited.add(start);
 		
 		while (!queue.isEmpty()) {
 			// remove first in queue
-			MapNode cur = queue.remove(0);
+			GeographicPoint cur = queue.remove(0);
 			// if current is goal, exit
 			if (cur.equals(goal)) return true;
 			
 			// add current's neighbors to queue and visited and parent map
-			for (MapEdge e : ) {
-				GeographicPoint p = e.getEnd();
+			for (MapEdge e : vertices.get(cur).getNeighbors()) {
+				GeographicPoint p = e.getEnd().getLocation();
 				if (!visited.contains(p)) {
 					queue.add(p);
 					visited.add(p);
