@@ -154,6 +154,14 @@ public class MapGraph {
 		
 	}
 	
+	/** Search loop for breadth first search
+	 * 
+	 * @param start The starting location
+	 * @param goal The goal location
+	 * @param parentMap The mapping between nodes and the node that led to them - to be filled in
+	 * @param nodeSearched A hook for visualization.  See assignment instructions for how to use it.
+	 * @return True/False that a path was found. ParentMap is filled up.
+	 */
 	private boolean bfsSearch(GeographicPoint start, GeographicPoint goal,
 			Map<GeographicPoint, GeographicPoint> parentMap,
 			Consumer<GeographicPoint> nodeSearched) {
@@ -185,6 +193,14 @@ public class MapGraph {
 		return false;
 	}
 	
+	/** Find the path from start to goal using breadth first search
+	 * 
+	 * @param start The starting location
+	 * @param goal The goal location
+	 * @param parentMap The mapping between nodes and the node that led to them - now filled in
+	 * @return The list of intersections that form the shortest (unweighted)
+	 *   path from start to goal (including both start and goal).
+	 */
 	private List<GeographicPoint> constructPath(GeographicPoint start, GeographicPoint goal,
 			Map<GeographicPoint, GeographicPoint> parentMap) {
 		List<GeographicPoint> path = new LinkedList<GeographicPoint>();

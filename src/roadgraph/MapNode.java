@@ -8,10 +8,13 @@ import geography.GeographicPoint;
 public class MapNode implements Comparable<Object> {
 	private GeographicPoint location;
 	private Set<MapEdge> neighbors;
+	private double distFromStart, estDistFromGoal;
 	
 	MapNode(GeographicPoint p) {
 		this.location = p;
 		this.neighbors = new HashSet<MapEdge>();
+		this.distFromStart = Double.POSITIVE_INFINITY;
+		this.estDistFromGoal = Double.POSITIVE_INFINITY;
 	}
 	
 	public void addEdge(MapEdge e) {
@@ -33,6 +36,26 @@ public class MapNode implements Comparable<Object> {
 	
 	public int getNumNeighbors() {
 		return neighbors.size();
+	}
+	
+	public void setDistanceFromStart(double d) {
+		this.distFromStart = d;
+	}
+	
+	public double getDistanceFromStart() {
+		return distFromStart;
+	}
+	
+	public void setEstDistFromGoal(double d) {
+		this.estDistFromGoal = d;
+	}
+	
+	public double getEstDistFromGoal() {
+		return estDistFromGoal;
+	}
+	
+	public double getTotalDistance() {
+		return distFromStart + estDistFromGoal;
 	}
 	
 	public int hashCode() {
