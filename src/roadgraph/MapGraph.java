@@ -433,8 +433,19 @@ public class MapGraph {
 			path.add(0, parentMap.get(path.get(0)));
 		}
 		
-		// save the path
-		vertices.get(start).setPath(goal, path);
+		// save the path and all intermediate paths along the way
+		for (int i = 0; i < path.size()-1; i++) {
+			// the starting point for the paths, from start to one before goal
+			MapNode mn1 = vertices.get(path.get(i));
+			for (int j = path.size()-1; j > i; j--) {
+				// the end point, going in from goal to one past current (mn1)
+				GeographicPoint p2 = path.get(j);
+				// add the path if one doesn't already exist
+				if (!mn1.hasPath(p2)) {
+					mn1.setPath(p2, path.subList(i, j+1));
+				}
+			}
+		}
 		
 		return path;
 	}
