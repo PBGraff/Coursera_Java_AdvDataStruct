@@ -33,7 +33,7 @@ public class MapEdge {
 		return roadType;
 	}
 	
-	public int hashCode() {
-		return from.hashCode()+to.hashCode();
-	}
+//	public int hashCode() {
+//		return from.hashCode()+to.hashCode();
+//	}
 }

@@ -167,26 +167,32 @@ public class MapGraph {
 	private boolean bfsSearch(GeographicPoint start, GeographicPoint goal,
 			Map<GeographicPoint, GeographicPoint> parentMap,
 			Consumer<GeographicPoint> nodeSearched) {
-		List<GeographicPoint> queue = new LinkedList<GeographicPoint>();
+		List<MapNode> queue = new LinkedList<MapNode>();
 		Set<GeographicPoint> visited = new HashSet<GeographicPoint>();
 		
-		queue.add(start);
+		queue.add(vertices.get(start));
 		visited.add(start);
 		
 		while (!queue.isEmpty()) {
 			// remove first in queue
-			GeographicPoint cur = queue.remove(0);
+			MapNode cur = queue.remove(0);
 			// if current is goal, exit
-			if (cur.equals(goal)) return true;
+			if (cur.getLocation().equals(goal)) return true;
 			
+			// if a path is known from current to goal, add this to parent map and return
+			if (cur.hasPath(goal)) {
+				addPathToMap(cur.getLocation(), goal, cur.getPath(goal), parentMap, nodeSearched);
+				return true;
+			}
+
 			// add current's neighbors to queue and visited and parent map
-			for (MapEdge e : vertices.get(cur).getNeighbors()) {
-				GeographicPoint p = e.getEnd().getLocation();
-				if (!visited.contains(p)) {
+			for (MapEdge e : cur.getNeighbors()) {
+				MapNode p = e.getEnd();
+				if (!visited.contains(p.getLocation())) {
 					queue.add(p);
-					visited.add(p);
-					parentMap.put(p, cur);
-					nodeSearched.accept(p);
+					visited.add(p.getLocation());
+					parentMap.put(p.getLocation(), cur.getLocation());
+					nodeSearched.accept(p.getLocation());
 				}
 			}
 		}
@@ -260,6 +266,12 @@ public class MapGraph {
 			// exit if this is the goal
 			if (cur.getLocation().equals(goal)) return true;
 			
+			// if a path is known from current to goal, add this to parent map and return
+			if (cur.hasPath(goal)) {
+				addPathToMap(cur.getLocation(), goal, cur.getPath(goal), parentMap, nodeSearched);
+				return true;
+			}
+
 			// loop over all neighbors
 			for (MapEdge e : cur.getNeighbors()) {
 				// if unvisited and this is a shorter path to the node, then add to queue
@@ -358,6 +370,12 @@ public class MapGraph {
 			// exit if this is the goal
 			if (cur.getLocation().equals(goal)) return true;
 			
+			// if a path is known from current to goal, add this to parent map and return
+			if (cur.hasPath(goal)) {
+				addPathToMap(cur.getLocation(), goal, cur.getPath(goal), parentMap, nodeSearched);
+				return true;
+			}
+			
 			// loop over all neighbors
 			for (MapEdge e : cur.getNeighbors()) {
 				// calculate estimated distance from neighbor to goal
@@ -403,12 +421,38 @@ public class MapGraph {
 	 */
 	private List<GeographicPoint> constructPath(GeographicPoint start, GeographicPoint goal,
 			Map<GeographicPoint, GeographicPoint> parentMap) {
+		// return a saved path if one exists
+		if (vertices.get(start).hasPath(goal)) {
+			return vertices.get(start).getPath(goal);
+		}
+		
+		// create the path
 		List<GeographicPoint> path = new LinkedList<GeographicPoint>();
 		path.add(goal);
 		while (!path.get(0).equals(start)) {
 			path.add(0, parentMap.get(path.get(0)));
 		}
+		
+		// save the path
+		vertices.get(start).setPath(goal, path);
+		
 		return path;
+	}
+
+	private void addPathToMap(GeographicPoint loc, GeographicPoint goal, List<GeographicPoint> path,
+			Map<GeographicPoint, GeographicPoint> parentMap, Consumer<GeographicPoint> nodeSearched) {
+		GeographicPoint p1 = null;
+		GeographicPoint p2 = loc;
+		// parent of start is already in map
+		// shift forward at each iteration of loop
+		for (int i = 1; i < path.size(); i++) {
+			p1 = p2;
+			p2 = path.get(i);
+			// add p1 as parent of p2
+			parentMap.put(p2, p1);
+			// add p2 to nodes searched
+			nodeSearched.accept(p2);
+		}
 	}
 
 	public static void main(String[] args)
